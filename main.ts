@@ -2811,3 +2811,287 @@ namespace EtSoccer {
 ///////////////////
 // END EXTENSION //
 ///////////////////
+
+
+//////////////////////////
+//  INCLUDE             //
+//  etgampad-shared.ts  //
+//////////////////////////
+
+const ET_GAMEPADID = "GP"
+
+enum ETgameJoystick {
+    //% block="none"
+    //% block.loc.nl="geen"
+    None,
+    //% block="up"
+    //% block.loc.nl="omhoog"
+    Up,
+    //% block="right up"
+    //% block.loc.nl="rechts omhoog"
+    UpRight,
+    //% block="right"
+    //% block.loc.nl="rechts"
+    Right,
+    //% block="right down"
+    //% block.loc.nl="rechts omlaag"
+    DownRight,
+    //% block="down"
+    //% block.loc.nl="omlaag"
+    Down,
+    //% block="left down"
+    //% block.loc.nl="links omlaag"
+    DownLeft,
+    //% block="left"
+    //% block.loc.nl="links"
+    Left,
+    //% block="left up"
+    //% block.loc.nl="links omhoog"
+    UpLeft,
+}
+
+enum ETgamePower {
+    //% block="without power"
+    //% block.loc.nl="zonder kracht"
+    None,
+    //% block="Low power"
+    //% block.loc.nl="weinig kracht"
+    Low,
+    //% block="Half power"
+    //% block.loc.nl="halve kracht"
+    Half,
+    //% block="Full power"
+    //% block.loc.nl="volle kracht"
+    Full,
+}
+
+enum ETgameButton {
+    //% block="up"
+    //% block.loc.nl="omhoog"
+    Up, //P12
+    //% block="down"
+    //% block.loc.nl="omlaag"
+    Down, //P15 
+    //% block="left"
+    //% block.loc.nl="links"
+    Left, //P13
+    //% block="right"
+    //% block.loc.nl="rechts"
+    Right, //P14
+}
+
+/////////////////
+// END INCLUDE //
+/////////////////
+
+////////////////////
+//  INCLUDE       //
+//  etgamepad.ts  //
+////////////////////
+
+enum ETjoystickMode {
+    //% block="the power also"
+    //% block.loc.nl="ook de kracht"
+    Power,
+    //% block="direction solely"
+    //% block.loc.nl="alleen de richting"
+    Direction,
+}
+
+type handler = () => void
+
+function etGamepadRadio(msg: string) {
+    serial.writeLine(msg)
+    let val = +msg
+    if (val >= 1000)
+        EtGamepad.handleJoystick(val - 1000)
+    else {
+        if (val >= 4) //four buttons
+            EtGamepad.handleReleased(val - 4)
+        else
+            EtGamepad.handlePressed(val)
+    }
+}
+etradio.registerMessageHandler(ET_GAMEPADID, etGamepadRadio)
+
+//% color="#C4C80E" icon="\uf11b"
+//% block="Gamepad"
+//% block.loc.nl="Gamepad"
+namespace EtGamepad {
+
+    let JSMODE = ETjoystickMode.Power
+    let JSANGLE = ETgameJoystick.None
+    let JSPOWER = 0
+
+    let PRESSEDUP = false
+    let PRESSEDDOWN = false
+    let PRESSEDLEFT = false
+    let PRESSEDRIGHT = false
+
+    // joystick handlers
+    let onJoyXHandler: handler
+    let onJoyNHandler: handler
+    let onJoyNEHandler: handler
+    let onJoyEHandler: handler
+    let onJoySEHandler: handler
+    let onJoySHandler: handler
+    let onJoySWHandler: handler
+    let onJoyWHandler: handler
+    let onJoyNWHandler: handler
+
+    // button press handlers
+    let onPressedUpHandler: handler
+    let onPressedDownHandler: handler
+    let onPressedLeftHandler: handler
+    let onPressedRightHandler: handler
+
+    // button release handlers
+    let onReleasedUpHandler: handler
+    let onReleasedDownHandler: handler
+    let onReleasedLeftHandler: handler
+    let onReleasedRightHandler: handler
+
+    export function handleJoystick(value: number) {
+
+        JSPOWER = Math.floor(value / 1000)
+        let angle = value - JSPOWER * 1000
+        if (JSMODE == ETjoystickMode.Direction && angle == JSANGLE)
+            return
+        JSANGLE = angle
+        if ((JSANGLE == ETgameJoystick.None) && onJoyXHandler)
+            onJoyXHandler()
+        if ((JSANGLE == ETgameJoystick.Up) && onJoyNHandler)
+            onJoyNHandler()
+        if ((JSANGLE == ETgameJoystick.UpRight) && onJoyNEHandler)
+            onJoyNEHandler()
+        if ((JSANGLE == ETgameJoystick.Right) && onJoyEHandler)
+            onJoyEHandler()
+        if ((JSANGLE == ETgameJoystick.DownRight) && onJoySEHandler)
+            onJoySEHandler()
+        if ((JSANGLE == ETgameJoystick.Down) && onJoySHandler)
+            onJoySHandler()
+        if ((JSANGLE == ETgameJoystick.DownLeft) && onJoySWHandler)
+            onJoySWHandler()
+        if ((JSANGLE == ETgameJoystick.Left) && onJoyWHandler)
+            onJoyWHandler()
+        if ((JSANGLE == ETgameJoystick.UpLeft) && onJoyNWHandler)
+            onJoyNWHandler()
+    }
+
+    export function handlePressed(button: ETgameButton) {
+        switch (button) {
+            case ETgameButton.Up: if (!PRESSEDUP) { PRESSEDUP = true; if (onPressedUpHandler) onPressedUpHandler(); } break;
+            case ETgameButton.Down: if (!PRESSEDDOWN) { PRESSEDDOWN = true; if (onPressedDownHandler) onPressedDownHandler(); } break;
+            case ETgameButton.Left: if (!PRESSEDLEFT) { PRESSEDLEFT = true; if (onPressedLeftHandler) onPressedLeftHandler(); } break;
+            case ETgameButton.Right: if (!PRESSEDRIGHT) { PRESSEDRIGHT = true; if (onPressedRightHandler) onPressedRightHandler(); } break;
+        }
+    }
+
+    export function handleReleased(button: ETgameButton) {
+        switch (button) {
+            case ETgameButton.Up: if (PRESSEDUP) { PRESSEDUP = false; if (onReleasedUpHandler) onReleasedUpHandler(); } break;
+            case ETgameButton.Down: if (PRESSEDDOWN) { PRESSEDDOWN = false; if (onReleasedDownHandler) onReleasedDownHandler(); } break;
+            case ETgameButton.Left: if (PRESSEDLEFT) { PRESSEDLEFT = false; if (onReleasedLeftHandler) onReleasedLeftHandler(); } break;
+            case ETgameButton.Right: if (PRESSEDRIGHT) { PRESSEDRIGHT = false; if (onReleasedRightHandler) onReleasedRightHandler(); } break;
+        }
+    }
+
+    //% color="#802080"
+    //% block="when button %button is onReleased"
+    //% block.loc.nl="wanneer knop %button wordt losgelaten"
+    export function onReleased(button: ETgameButton, code: () => void): void {
+        switch (button) {
+            case ETgameButton.Up: onReleasedUpHandler = code; break;
+            case ETgameButton.Down: onReleasedDownHandler = code; break;
+            case ETgameButton.Left: onReleasedLeftHandler = code; break;
+            case ETgameButton.Right: onReleasedRightHandler = code; break;
+        }
+    }
+
+    //% color="#802080"
+    //% block="when button %button is onPressed"
+    //% block.loc.nl="wanneer knop %button wordt ingedrukt"
+    export function onPressed(button: ETgameButton, code: () => void): void {
+        switch (button) {
+            case ETgameButton.Up: onPressedUpHandler = code; break;
+            case ETgameButton.Down: onPressedDownHandler = code; break;
+            case ETgameButton.Left: onPressedLeftHandler = code; break;
+            case ETgameButton.Right: onPressedRightHandler = code; break;
+        }
+    }
+
+    //% color="#802080"
+    //% block="when the joystick direction is %dir"
+    //% block.loc.nl="wanneer de joystick richting %dir is"
+    export function onJoystick(dir: ETgameJoystick, code: () => void): void {
+        switch (dir) {
+            case ETgameJoystick.None: onJoyXHandler = code; break;
+            case ETgameJoystick.Up: onJoyNHandler = code; break;
+            case ETgameJoystick.UpRight: onJoyNEHandler = code; break;
+            case ETgameJoystick.Right: onJoyEHandler = code; break;
+            case ETgameJoystick.DownRight: onJoySEHandler = code; break;
+            case ETgameJoystick.Down: onJoySHandler = code; break;
+            case ETgameJoystick.DownLeft: onJoySWHandler = code; break;
+            case ETgameJoystick.Left: onJoyWHandler = code; break;
+            case ETgameJoystick.UpLeft: onJoyNWHandler = code; break;
+        }
+    }
+
+    //% block="%button is up"
+    //% block.loc.nl="%button is losgelaten"
+    export function isReleased(button: ETgameButton): boolean {
+        switch (button) {
+            case ETgameButton.Up: return !PRESSEDUP;
+            case ETgameButton.Down: return !PRESSEDDOWN;
+            case ETgameButton.Left: return !PRESSEDLEFT;
+            case ETgameButton.Right: return !PRESSEDRIGHT;
+        }
+        return false;
+    }
+
+    //% block="%button is down"
+    //% block.loc.nl="%button is ingedrukt"
+    export function isPressed(button: ETgameButton): boolean {
+        switch (button) {
+            case ETgameButton.Up: return PRESSEDUP;
+            case ETgameButton.Down: return PRESSEDDOWN;
+            case ETgameButton.Left: return PRESSEDLEFT;
+            case ETgameButton.Right: return PRESSEDRIGHT;
+        }
+        return false;
+    }
+
+    //% block="joystick-power"
+    //% block.loc.nl="joystick-kracht"
+    export function readPower(): ETgamePower {
+        return JSPOWER
+    }
+
+    //% block="joystick direction"
+    //% block.loc.nl="joystick-richting"
+    export function readJoystick(): ETgameJoystick {
+        return JSANGLE
+    }
+
+    //% block="%power"
+    //% block.loc.nl="%power"
+    export function defPower(power: ETgamePower): ETgamePower {
+        return power
+    }
+
+    //% block="%joystick"
+    //% block.loc.nl="%joystick"
+    export function defJoystick(joystick: ETgameJoystick): ETgameJoystick {
+        return joystick
+    }
+
+    //% block="the joystick measures %mode"
+    //% block.loc.nl="de joystick meet %mode"
+    export function setMode(mode: ETjoystickMode) {
+        JSMODE = mode
+    }
+}
+
+/////////////////
+// END INCLUDE //
+/////////////////
